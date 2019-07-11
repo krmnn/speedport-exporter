@@ -57,7 +57,6 @@ class SpeedportClient:
         name='heartbeat_exceptions',
         documentation='Exceptions in the heartbeat method'
     )
-
     # endregion
 
     def __init__(self, host, password, session: aiohttp.ClientSession):
@@ -103,7 +102,7 @@ class SpeedportClient:
         derivedk = hashlib.pbkdf2_hmac(
             'sha1',
             hashlib.sha256(self._password.encode()).hexdigest().encode(),
-            self._password[0:16].encode(),
+            challenge[0:16].encode(),
             1000,
             16
         ).hex()
