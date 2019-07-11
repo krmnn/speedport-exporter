@@ -13,8 +13,7 @@ from prometheus_client import Summary, Counter
 
 logging.basicConfig(level=logging.DEBUG)
 
-_speedport = 'speedport.ip'
-_password = 'KeAm9pcJ5XBb'
+from settings import _speedport, _password
 
 
 class SpeedportClient:
