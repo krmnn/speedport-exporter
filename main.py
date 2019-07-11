@@ -175,8 +175,8 @@ class SpeedportCollector:
         self._client = client
 
     async def collect(self):
-        with self._collect_exceptions.labels(self.METRICS_SUBSYSTEM):
-            with self._collect_duration.labels(self.METRICS_SUBSYSTEM):
+        with self._collect_exceptions.labels(self.METRICS_SUBSYSTEM).count_exceptions():
+            with self._collect_duration.labels(self.METRICS_SUBSYSTEM).time():
                 return await self._collect()
 
     # noinspection PyMethodMayBeStatic
