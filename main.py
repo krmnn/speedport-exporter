@@ -65,8 +65,8 @@ class SpeedportClient:
         self._password = password
         self._session = session
 
-    @aio.time(LOGIN_TIME)
     @aio.count_exceptions(LOGIN_EXCEPTIONS)
+    @aio.time(LOGIN_TIME)
     async def login(self):
         async with self._session.get('http://{}/html/login/index.html'.format(self._host)) as resp:
             assert resp.status == 200
@@ -125,8 +125,8 @@ class SpeedportClient:
 
                     return json.loads(await resp.text())
 
-    @aio.time(HEARTBEAT_TIME)
     @aio.count_exceptions(HEARTBEAT_EXCEPTIONS)
+    @aio.time(HEARTBEAT_TIME)
     async def heartbeat(self) -> bool:
         # We shouldn't have caching issues, but maybe the speedport interprets the params
         params = {
