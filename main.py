@@ -338,7 +338,7 @@ async def main():
         dsl = SpeedportDslCollector(client)
         async_collectors.append(dsl)
 
-        await aio.web.start_http_server(port=9999)
+        await aio.web.start_http_server(port=9611)
         await login_task
 
 
