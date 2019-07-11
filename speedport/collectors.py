@@ -17,7 +17,7 @@ class SpeedportBaseCollector:
     _collect_exceptions = Counter(
         namespace=METRICS_NAMESPACE,
         name='collection_exceptions',
-        documentation='Exceptions occuring durring the collection',
+        documentation='Exceptions occurring during the collection',
         labelnames=['subsystem'],
     )
 
@@ -200,6 +200,7 @@ class SpeedportLteCollector(SpeedportBaseCollector):
             documentation='LTE RSRQ'
         )
 
+    # noinspection SpellCheckingInspection
     async def _collect(self):
         data = await self._client.fetch_data('lteinfo')
 

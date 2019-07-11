@@ -68,6 +68,7 @@ class SpeedportClient:
 
         encrypted_password = hashlib.sha256('{}:{}'.format(challenge, self._password).encode()).hexdigest()
 
+        # noinspection SpellCheckingInspection
         request_data = {
             'password': encrypted_password,
             'csrf_token': 'nulltoken',
@@ -92,7 +93,7 @@ class SpeedportClient:
 
             assert data['login'] == 'success'
 
-        derivedk = hashlib.pbkdf2_hmac(
+        derived_key = hashlib.pbkdf2_hmac(
             'sha1',
             hashlib.sha256(self._password.encode()).hexdigest().encode(),
             challenge[0:16].encode(),
@@ -104,7 +105,7 @@ class SpeedportClient:
         cookies['challengev'] = challenge
         cookies['challengev']['domain'] = self._host
 
-        cookies['derivedk'] = derivedk
+        cookies['derivedk'] = derived_key
         cookies['derivedk']['domain'] = self._host
 
         self._session.cookie_jar.update_cookies(cookies)
@@ -147,4 +148,5 @@ class SpeedportClient:
 
     @staticmethod
     def parse_typed_dict(data):
+        # noinspection SpellCheckingInspection
         return {item['varid']: item['varvalue'] for item in data}
