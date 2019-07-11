@@ -158,19 +158,31 @@ class SpeedportCollector:
     METRICS_NAMESPACE = 'speedport'
     METRICS_SUBSYSTEM = ''
 
+    _collect_duration = Summary(
+        namespace=METRICS_NAMESPACE,
+        name='collection_duration',
+        unit='seconds',
+        documentation='Duration to collect dsl metrics',
+        labelnames=['subsystem'],
+    )
+    _collect_exceptions = Counter(
+        namespace=METRICS_NAMESPACE,
+        name='collection_exceptions',
+        documentation='Exceptions occuring durring the collection',
+        labelnames=['subsystem'],
+    )
+
     def __init__(self, client: SpeedportClient):
         self._client = client
 
-        self._collect_duration = Summary(
-            namespace=self.METRICS_NAMESPACE,
-            subsystem=self.METRICS_SUBSYSTEM,
-            name='collection_duration',
-            unit='seconds',
-            documentation='Duration to collect dsl metrics'
-        )
-
     async def collect(self):
-        return await aio.time(self._collect_duration, self._collect())
+        return await aio.time(
+            self._collect_duration.labels(self.METRICS_SUBSYSTEM),
+            aio.count_exceptions(
+                self._collect_exceptions.labels(self.METRICS_SUBSYSTEM),
+                self._collect()
+            )
+        )
 
     # noinspection PyMethodMayBeStatic
     async def _collect(self):
