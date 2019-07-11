@@ -323,6 +323,61 @@ class SpeedportDslCollector(SpeedportCollector):
         self._fec_error_count.labels('download').set(line['dFEC'])
 
 
+class SpeedportLteCollector(SpeedportCollector):
+    METRICS_SUBSYSTEM = 'lte'
+
+    def __init__(self, client: SpeedportClient):
+        super().__init__(client)
+
+        self._device_info = Info(
+            namespace=self.METRICS_NAMESPACE,
+            subsystem=self.METRICS_SUBSYSTEM,
+            name='device',
+            documentation='LTE Device Information'
+        )
+        self._connection_info = Info(
+            namespace=self.METRICS_NAMESPACE,
+            subsystem=self.METRICS_SUBSYSTEM,
+            name='connection',
+            documentation='LTE Cell Information'
+        )
+
+        self._rsrp = Gauge(
+            namespace=self.METRICS_NAMESPACE,
+            subsystem=self.METRICS_SUBSYSTEM,
+            name='rsrp',
+            documentation='LTE RSRP'
+        )
+        self._rsrq = Gauge(
+            namespace=self.METRICS_NAMESPACE,
+            subsystem=self.METRICS_SUBSYSTEM,
+            name='rsrq',
+            documentation='LTE RSRQ'
+        )
+
+    async def _collect(self):
+        data = await self._client.fetch_data('lteinfo')
+
+        self._device_info.info({
+            'imei': data['imei'],
+            'imsi': data['imsi'],
+            'device_status': data['device_status'],
+            'card_status': data['card_status'],
+            'antenna_mode': data['antenna_mode'],
+        })
+
+        self._connection_info.info({
+            'phycellid': data['phycellid'],
+            'cellid': data['cellid'],
+            'tac': data['tac'],
+            'service_status': data['service_status'],
+            'eps': data['eps']
+        })
+
+        self._rsrp.set(data['rsrp'])
+        self._rsrq.set(data['rsrq'])
+
+
 async_collectors = []
 server_stats_save = aio.web.server_stats
 
@@ -349,6 +404,9 @@ async def main():
 
         dsl = SpeedportDslCollector(client)
         async_collectors.append(dsl)
+
+        lte = SpeedportLteCollector(client)
+        async_collectors.append(lte)
 
         await aio.web.start_http_server(port=9611)
         await login_task
