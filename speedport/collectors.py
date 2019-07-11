@@ -1,6 +1,10 @@
+import logging
+
 from prometheus_client import Summary, Counter, Info, Gauge
 
 from .client import SpeedportClient
+
+logger = logging.getLogger(__name__)
 
 
 class SpeedportBaseCollector:
@@ -20,14 +24,26 @@ class SpeedportBaseCollector:
         documentation='Exceptions occurring during the collection',
         labelnames=['subsystem'],
     )
+    _collect_time = Gauge(
+        namespace=METRICS_NAMESPACE,
+        name='collect_time',
+        unit='seconds',
+        documentation='Last successful collect (useful because ignoring exceptions)',
+        labelnames=['subsystem']
+    )
 
     def __init__(self, client: SpeedportClient):
         self._client = client
 
     async def collect(self):
-        with self._collect_exceptions.labels(self.METRICS_SUBSYSTEM).count_exceptions():
-            with self._collect_duration.labels(self.METRICS_SUBSYSTEM).time():
-                return await self._collect()
+        try:
+            with self._collect_exceptions.labels(self.METRICS_SUBSYSTEM).count_exceptions():
+                with self._collect_duration.labels(self.METRICS_SUBSYSTEM).time():
+                    data = await self._collect()
+                    self._collect_time.labels(self.METRICS_SUBSYSTEM).set_to_current_time()
+                    return data
+        except Exception as e:
+            logger.error(e)
 
     # noinspection PyMethodMayBeStatic
     async def _collect(self):
