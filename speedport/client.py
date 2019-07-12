@@ -61,7 +61,7 @@ class SpeedportClient:
     @aio.time(LOGIN_TIME)
     async def login(self):
         async with self._session.get('http://{}/html/login/index.html'.format(self._host)) as resp:
-            assert resp.status == 200
+            assert resp.status == 200, "Response status code for fetching index is {}".format(file, resp.status)
             re_res = re.search(r'[0-9a-zA-Z]{64}', await resp.text())
             if re_res:
                 challenge = re_res.group(0)
@@ -91,7 +91,7 @@ class SpeedportClient:
             parsed = json.loads(content)
             data = self.parse_typed_dict(parsed)
 
-            assert data['login'] == 'success'
+            assert data['login'] == 'success', "Login wasn't successful: {}".format(data)
 
         derived_key = hashlib.pbkdf2_hmac(
             'sha1',
@@ -114,7 +114,7 @@ class SpeedportClient:
         with self.FETCH_EXCEPTIONS.labels(file).count_exceptions():
             with self.FETCH_TIME.labels(file).time():
                 async with self._session.get('http://{}/data/{}.json'.format(self._host, file)) as resp:
-                    assert resp.status == 200
+                    assert resp.status == 200, "Response status code for {} is {}".format(file, resp.status)
                     raw = await resp.text()
                     try:
                         return json.loads(raw)
@@ -134,7 +134,7 @@ class SpeedportClient:
             'http://{}/data/heartbeat.json'.format(self._host),
             params=params
         ) as resp:
-            assert resp.status == 200
+            assert resp.status == 200, "Response status code for heartbeat is {}".format(resp.status)
             raw_data = json.loads(await resp.text())
             data = self.parse_typed_dict(raw_data)
             return data['loginstate'] == '1'
