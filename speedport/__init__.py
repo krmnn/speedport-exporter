@@ -14,3 +14,4 @@ SpeedportClient = client.SpeedportClient
 
 SpeedportDslCollector = collectors.SpeedportDslCollector
 SpeedportLteCollector = collectors.SpeedportLteCollector
+SpeedportInterfaceCollector = collectors.SpeedportInterfaceCollector
