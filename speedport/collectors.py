@@ -1,4 +1,5 @@
 import logging
+import re
 
 from prometheus_client import Summary, Counter, Info, Gauge
 
@@ -238,3 +239,133 @@ class SpeedportLteCollector(SpeedportBaseCollector):
 
         self._rsrp.set(data['rsrp'])
         self._rsrq.set(data['rsrq'])
+
+
+class SpeedportInterfaceCollector(SpeedportBaseCollector):
+    METRICS_SUBSYSTEM = 'interface'
+
+    def __init__(self, client: SpeedportClient):
+        super().__init__(client)
+
+        self._info = Info(
+            namespace=self.METRICS_NAMESPACE,
+            name=self.METRICS_SUBSYSTEM,
+            labelnames=['interface'],
+            documentation='Information about the physical interfaces',
+        )
+        self._up = Gauge(
+            namespace=self.METRICS_NAMESPACE,
+            subsystem=self.METRICS_SUBSYSTEM,
+            labelnames=['interface'],
+            name='up',
+            documentation='The status of the interface',
+        )
+        self._rx_speed = Gauge(
+            namespace=self.METRICS_NAMESPACE,
+            subsystem=self.METRICS_SUBSYSTEM,
+            labelnames=['interface'],
+            name='receive_speed',
+            unit='kbps',
+            documentation='Receiving speed of the interface (if applicable else -1)',
+        )
+        self._tx_speed = Gauge(
+            namespace=self.METRICS_NAMESPACE,
+            subsystem=self.METRICS_SUBSYSTEM,
+            labelnames=['interface'],
+            name='transmit_speed',
+            unit='kbps',
+            documentation='Transmit speed of the interface (if applicable else -1)'
+        )
+        self._mtu = Gauge(
+            namespace=self.METRICS_NAMESPACE,
+            subsystem=self.METRICS_SUBSYSTEM,
+            labelnames=['interface'],
+            name='mtu',
+            unit='bytes',
+            documentation='The mtu of the interface',
+        )
+        self._tx_packets = Gauge(
+            namespace=self.METRICS_NAMESPACE,
+            subsystem=self.METRICS_SUBSYSTEM,
+            labelnames=['interface'],
+            name='transmit_packets',
+            unit='total',
+            documentation='Transmitted packets on this interface'
+        )
+        self._rx_packets = Gauge(
+            namespace=self.METRICS_NAMESPACE,
+            subsystem=self.METRICS_SUBSYSTEM,
+            labelnames=['interface'],
+            name='receive_packets',
+            unit='total',
+            documentation='Received packets on this interface'
+        )
+        self._tx_errors = Gauge(
+            namespace=self.METRICS_NAMESPACE,
+            subsystem=self.METRICS_SUBSYSTEM,
+            labelnames=['interface'],
+            name='transmit_errs',
+            unit='total',
+            documentation='Error count on transmitting'
+        )
+        self._rx_errors = Gauge(
+            namespace=self.METRICS_NAMESPACE,
+            subsystem=self.METRICS_SUBSYSTEM,
+            labelnames=['interface'],
+            name='receive_errs',
+            unit='total',
+            documentation='Error count on receiving'
+        )
+        self._collisions = Gauge(
+            namespace=self.METRICS_NAMESPACE,
+            subsystem=self.METRICS_SUBSYSTEM,
+            labelnames=['interface'],
+            name='collisions',
+            documentation='Collision count on interface'
+        )
+
+    def _process_data(self, data):
+        interfaces = data['line_status']
+
+        for interface in interfaces:
+            name = interface['interface']
+            del interface['interface']
+
+            self._up.labels(name).set(interface['status'] == 'Up')
+            del interface['status']
+
+            if interface['media'] == 'WLAN':
+                re_res = re.search(r'([0-9]+)Mbps', interface['speed'])
+                if re_res:
+                    speed = int(re_res.group(1)) * 1000
+                    self._rx_speed.labels(name).set(speed)
+                    self._tx_speed.labels(name).set(speed)
+
+                    del interface['speed']
+            elif interface['media'] == 'DSL':
+                re_res = re.search(r'DownStream:([0-9]+)kbps UpStream:([0-9]+)kbps', interface['speed'])
+                if re_res:
+                    self._rx_speed.labels(name).set(re_res.group(1))
+                    self._tx_speed.labels(name).set(re_res.group(2))
+                    del interface['speed']
+            else:
+                self._rx_speed.labels(name).set(-1)
+                self._tx_speed.labels(name).set(-1)
+
+            self._mtu.labels(name).set(interface['MTU'])
+            del interface['MTU']
+
+            self._tx_packets.labels(name).set(interface['tx_packets'])
+            del interface['tx_packets']
+            self._rx_packets.labels(name).set(interface['rx_packets'])
+            del interface['rx_packets']
+
+            self._tx_errors.labels(name).set(interface['tx_errors'])
+            del interface['tx_errors']
+            self._rx_errors.labels(name).set(interface['rx_errors'])
+            del interface['rx_errors']
+
+            self._collisions.labels(name).set(interface['collisions'])
+            del interface['collisions']
+
+            self._info.labels(name).info(interface)
