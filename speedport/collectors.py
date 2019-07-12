@@ -325,7 +325,7 @@ class SpeedportInterfaceCollector(SpeedportBaseCollector):
         )
 
     async def _collect(self):
-        data = await self._client.fetch_data('interface')
+        data = await self._client.fetch_data('interfaces')
         return self._process_data(data)
 
     def _process_data(self, data):
