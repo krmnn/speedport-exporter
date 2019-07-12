@@ -48,7 +48,7 @@ class SpeedportBaseCollector:
 
     # noinspection PyMethodMayBeStatic
     async def _collect(self):
-        return []
+        raise NotImplementedError('Subclasses have to implement _collect')
 
 
 class SpeedportDslCollector(SpeedportBaseCollector):
@@ -323,6 +323,10 @@ class SpeedportInterfaceCollector(SpeedportBaseCollector):
             name='collisions',
             documentation='Collision count on interface'
         )
+
+    async def _collect(self):
+        data = await self._client.fetch_data('interface')
+        return self._process_data(data)
 
     def _process_data(self, data):
         interfaces = data['line_status']
