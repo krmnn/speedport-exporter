@@ -11,6 +11,7 @@ logger = logging.getLogger(__name__)
 class BaseCollector:
     METRICS_NAMESPACE = 'speedport'
     METRICS_SUBSYSTEM = ''
+    ENDPOINT = ''
 
     _collect_duration = Summary(
         namespace=METRICS_NAMESPACE,
@@ -36,7 +37,7 @@ class BaseCollector:
     def __init__(self, client: SpeedportClient):
         self._client = client
 
-        if not hasattr(self, 'ENDPOINT'):
+        if not self.ENDPOINT:
             self.ENDPOINT = self.METRICS_SUBSYSTEM
 
     async def collect(self):
