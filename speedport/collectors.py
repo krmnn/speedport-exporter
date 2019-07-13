@@ -371,3 +371,19 @@ class SpeedportInterfaceCollector(SpeedportBaseCollector):
             del interface['collisions']
 
             self._info.labels(name).info(interface)
+
+
+class SpeedportModuleCollector(SpeedportBaseCollector):
+    METRICS_SUBSYSTEM = 'module'
+
+    def __init__(self, client: SpeedportClient):
+        super().__init__(client)
+
+        self._info = Info(
+            namespace=self.METRICS_NAMESPACE,
+            name=self.METRICS_SUBSYSTEM,
+            documentation='Firmware version information'
+        )
+
+    def _process_data(self, data):
+        self._info.info(data)
