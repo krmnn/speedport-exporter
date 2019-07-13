@@ -8,7 +8,7 @@ from prometheus_async import aio
 
 from settings import _speedport, _password
 from speedport import Client
-from speedport import DslCollector, InterfaceCollector, LteCollector, ModuleCollector
+from speedport import DslCollector, InterfaceCollector, LteCollector, ModuleCollector, BondingTunnelCollector
 
 async_collectors = []
 server_stats_save = aio.web.server_stats
@@ -45,6 +45,9 @@ async def main():
 
         module = ModuleCollector(client)
         async_collectors.append(module)
+
+        bonding_tunnel = BondingTunnelCollector(client)
+        async_collectors.append(bonding_tunnel)
 
         await aio.web.start_http_server(port=9611)
         await login_task

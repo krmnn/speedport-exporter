@@ -388,3 +388,208 @@ class ModuleCollector(BaseCollector):
 
     def _process_data(self, data):
         self._info.info(data)
+
+
+class BondingTunnelCollector(BaseCollector):
+    METRICS_SUBSYSTEM = 'bonding'
+    ENDPOINT = 'bonding_tunnel'
+
+    # noinspection SpellCheckingInspection
+    _tcp_ext_names = [
+        'SyncookiesSent',
+        'SyncookiesRecv',
+        'SyncookiesFailed',
+        'EmbryonicRsts',
+        'PruneCalled',
+        'RcvPruned',
+        'OfoPruned',
+        'OutOfWindowIcmps',
+        'LockDroppedIcmps',
+        'ArpFilter',
+        'TW',
+        'TWRecycled',
+        'TWKilled',
+        'PAWSPassive',
+        'PAWSActive',
+        'PAWSEstab',
+        'DelayedACKs',
+        'DelayedACKLocked',
+        'DelayedACKLost',
+        'ListenOverflows',
+        'ListenDrops',
+        'TCPPrequeued',
+        'TCPDirectCopyFromBacklog',
+        'TCPDirectCopyFromPrequeue',
+        'TCPPrequeueDropped',
+        'TCPHPHits',
+        'TCPHPHitsToUser',
+        'TCPPureAcks',
+        'TCPHPAcks',
+        'TCPRenoRecovery',
+        'TCPSackRecovery',
+        'TCPSACKReneging',
+        'TCPFACKReorder',
+        'TCPSACKReorder',
+        'TCPRenoReorder',
+        'TCPTSReorder',
+        'TCPFullUndo',
+        'TCPPartialUndo',
+        'TCPDSACKUndo',
+        'TCPLossUndo',
+        'TCPLostRetransmit',
+        'TCPRenoFailures',
+        'TCPSackFailures',
+        'TCPLossFailures',
+        'TCPFastRetrans',
+        'TCPForwardRetrans',
+        'TCPSlowStartRetrans',
+        'TCPTimeouts',
+        'TCPRenoRecoveryFail',
+        'TCPSackRecoveryFail',
+        'TCPSchedulerFailed',
+        'TCPRcvCollapsed',
+        'TCPDSACKOldSent',
+        'TCPDSACKOfoSent',
+        'TCPDSACKRecv',
+        'TCPDSACKOfoRecv',
+        'TCPAbortOnSyn',
+        'TCPAbortOnData',
+        'TCPAbortOnClose',
+        'TCPAbortOnMemory',
+        'TCPAbortOnTimeout',
+        'TCPAbortOnLinger',
+        'TCPAbortFailed',
+        'TCPMemoryPressures',
+        'TCPSACKDiscard',
+        'TCPDSACKIgnoredOld',
+        'TCPDSACKIgnoredNoUndo',
+        'TCPSpuriousRTOs',
+        'TCPMD5NotFound',
+        'TCPMD5Unexpected',
+        'TCPSackShifted',
+        'TCPSackMerged',
+        'TCPSackShiftFallback',
+        'TCPBacklogDrop',
+        'TCPMinTTLDrop',
+        'TCPDeferAcceptDrop',
+        'IPReversePathFilter',
+        'TCPTimeWaitOverflow',
+        'TCPReqQFullDoCookies',
+        'TCPReqQFullDrop',
+        'TCPRetransFail',
+        'TCPRcvCoalesce',
+    ]
+    # noinspection SpellCheckingInspection
+    _ip_ext_names = [
+        'InNoRoutes',
+        'InTruncatedPkts',
+        'InMcastPkts',
+        'OutMcastPkts',
+        'InBcastPkts',
+        'OutBcastPkts',
+        'InOctets',
+        'OutOctets',
+        'InMcastOctets',
+        'OutMcastOctets',
+        'InBcastOctets',
+        'OutBcastOctets',
+    ]
+    # noinspection SpellCheckingInspection
+    _ireg_names = [
+        'out_sequence_number',
+        'maximum_sequence_number',
+        'error_sequence_number',
+        'out_interface_index',
+        'maximum_interface_index',
+        'queue_length',
+        'over_count',
+        'over_number',
+        'blow_count',
+        'blow_number',
+        'reverse_number',
+        'time_out_count',
+        'time_out_drop_count',
+        'lost_times',
+        'same_sequence_number',
+        # 'sequence_error_count', # in the table there are 16 fields, but only 15 are contained in the json
+    ]
+
+    def __init__(self, client: Client):
+        super().__init__(client)
+
+        assert len(self._tcp_ext_names) == len(set(self._tcp_ext_names))
+
+        self._tcp_ext_metrics = {
+            name: Gauge(
+                namespace=self.METRICS_NAMESPACE,
+                subsystem=self.METRICS_SUBSYSTEM,
+                name='TcpExt_' + name,
+                documentation=name
+            )
+            for name in self._tcp_ext_names
+        }
+
+        self._ip_ext_metrics = {
+            name: Gauge(
+                namespace=self.METRICS_NAMESPACE,
+                subsystem=self.METRICS_SUBSYSTEM,
+                name='IpExt_' + name,
+                documentation=name
+            )
+            for name in self._ip_ext_names
+        }
+
+        self._ireg_metrics = {
+            name: Gauge(
+                namespace=self.METRICS_NAMESPACE,
+                subsystem=self.METRICS_SUBSYSTEM,
+                name='ireg_' + name,
+                documentation=name
+            )
+            for name in self._ireg_names
+        }
+
+        self._lte_tunnel = Gauge(
+            namespace=self.METRICS_NAMESPACE,
+            subsystem=self.METRICS_SUBSYSTEM,
+            name='lte_tunnel',
+            unit='status',
+            documentation='The status of the lte tunnel, 1 means up',
+        )
+        self._dsl_tunnel = Gauge(
+            namespace=self.METRICS_NAMESPACE,
+            subsystem=self.METRICS_SUBSYSTEM,
+            name='dsl_tunnel',
+            unit='status',
+            documentation='The status of the dsl tunnel, 1 means up',
+        )
+        self._bonding = Gauge(
+            namespace=self.METRICS_NAMESPACE,
+            subsystem=self.METRICS_SUBSYSTEM,
+            name='bonding',
+            unit='status',
+            documentation='The status of bonding, 1 means up',
+        )
+
+    def _process_data(self, data):
+        tcp_ext = data['TcpExt']
+        del data['TcpExt']
+        self.__merge_lists(tcp_ext, 'TcpExt', self._tcp_ext_names, self._tcp_ext_metrics)
+
+        ip_ext = data['IpExt']
+        del data['IpExt']
+        self.__merge_lists(ip_ext, 'IpExt', self._ip_ext_names, self._ip_ext_metrics)
+
+        ireg = data['ireg']
+        del data['ireg']
+        self.__merge_lists(ireg, 'ireg', self._ireg_names, self._ireg_metrics)
+
+        self._lte_tunnel.set(data['lte_tunnel'] == 'Up')
+        self._dsl_tunnel.set(data['dsl_tunnel'] == 'Up')
+        self._bonding.set(data['bonding'] == 'Up')
+
+    @staticmethod
+    def __merge_lists(data, kind: str, names: list, metrics: dict):
+        assert len(names) == len(data), "Length {} != {} of {}".format(len(names), len(data), kind)
+        for i, name in enumerate(names):
+            metrics[name].set(data[i][kind])
