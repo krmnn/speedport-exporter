@@ -8,7 +8,7 @@ from .client import SpeedportClient
 logger = logging.getLogger(__name__)
 
 
-class SpeedportBaseCollector:
+class BaseCollector:
     METRICS_NAMESPACE = 'speedport'
     METRICS_SUBSYSTEM = ''
 
@@ -54,11 +54,11 @@ class SpeedportBaseCollector:
         raise NotImplementedError('Subclasses have to implement _process_Data')
 
 
-class SpeedportDslCollector(SpeedportBaseCollector):
+class DslCollector(BaseCollector):
     METRICS_SUBSYSTEM = 'dsl'
 
     def __init__(self, client: SpeedportClient):
-        super(SpeedportDslCollector, self).__init__(client)
+        super().__init__(client)
 
         self._connection_info = Info(
             namespace=self.METRICS_NAMESPACE,
@@ -187,7 +187,7 @@ class SpeedportDslCollector(SpeedportBaseCollector):
         self._fec_error_count.labels('download').set(line['dFEC'])
 
 
-class SpeedportLteCollector(SpeedportBaseCollector):
+class LteCollector(BaseCollector):
     METRICS_SUBSYSTEM = 'lte'
     ENDPOINT = 'lteinfo'
 
@@ -242,7 +242,7 @@ class SpeedportLteCollector(SpeedportBaseCollector):
         self._rsrq.set(data['rsrq'])
 
 
-class SpeedportInterfaceCollector(SpeedportBaseCollector):
+class InterfaceCollector(BaseCollector):
     METRICS_SUBSYSTEM = 'interface'
     ENDPOINT = 'interfaces'
 
@@ -373,7 +373,7 @@ class SpeedportInterfaceCollector(SpeedportBaseCollector):
             self._info.labels(name).info(interface)
 
 
-class SpeedportModuleCollector(SpeedportBaseCollector):
+class ModuleCollector(BaseCollector):
     METRICS_SUBSYSTEM = 'module'
 
     def __init__(self, client: SpeedportClient):
