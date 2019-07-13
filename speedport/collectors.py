@@ -3,9 +3,7 @@ import re
 
 from prometheus_client import Summary, Counter, Info, Gauge
 
-from .client import SpeedportClient
-
-logger = logging.getLogger(__name__)
+from .client import Client
 
 
 class BaseCollector:
@@ -34,11 +32,13 @@ class BaseCollector:
         labelnames=['subsystem']
     )
 
-    def __init__(self, client: SpeedportClient):
+    def __init__(self, client: Client):
         self._client = client
 
         if not self.ENDPOINT:
             self.ENDPOINT = self.METRICS_SUBSYSTEM
+
+        self.logger = logging.getLogger(__name__ +'.'+ self.__class__.__name__)
 
     async def collect(self):
         try:
@@ -49,7 +49,7 @@ class BaseCollector:
                     self._collect_time.labels(self.METRICS_SUBSYSTEM).set_to_current_time()
                     return data
         except Exception as e:
-            logger.error(e)
+            self.logger.error(e)
 
     def _process_data(self, data):
         raise NotImplementedError('Subclasses have to implement _process_Data')
@@ -58,7 +58,7 @@ class BaseCollector:
 class DslCollector(BaseCollector):
     METRICS_SUBSYSTEM = 'dsl'
 
-    def __init__(self, client: SpeedportClient):
+    def __init__(self, client: Client):
         super().__init__(client)
 
         self._connection_info = Info(
@@ -192,7 +192,7 @@ class LteCollector(BaseCollector):
     METRICS_SUBSYSTEM = 'lte'
     ENDPOINT = 'lteinfo'
 
-    def __init__(self, client: SpeedportClient):
+    def __init__(self, client: Client):
         super().__init__(client)
 
         self._device_info = Info(
@@ -247,7 +247,7 @@ class InterfaceCollector(BaseCollector):
     METRICS_SUBSYSTEM = 'interface'
     ENDPOINT = 'interfaces'
 
-    def __init__(self, client: SpeedportClient):
+    def __init__(self, client: Client):
         super().__init__(client)
 
         self._info = Info(
@@ -377,7 +377,7 @@ class InterfaceCollector(BaseCollector):
 class ModuleCollector(BaseCollector):
     METRICS_SUBSYSTEM = 'module'
 
-    def __init__(self, client: SpeedportClient):
+    def __init__(self, client: Client):
         super().__init__(client)
 
         self._info = Info(

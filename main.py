@@ -1,4 +1,7 @@
 import asyncio
+import logging
+
+logging.basicConfig(format='%(asctime)s : %(levelname)8s : %(name)30s : %(funcName)-20s : %(lineno)4d : %(message)s')
 
 import aiohttp
 from prometheus_async import aio

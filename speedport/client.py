@@ -1,5 +1,6 @@
 import asyncio
 import hashlib
+import logging
 import random
 import re
 import time
@@ -11,7 +12,7 @@ from prometheus_async import aio
 from prometheus_client import Summary, Counter
 
 
-class SpeedportClient:
+class Client:
     # region metric definitions
     METRICS_NAMESPACE = 'speedport_client'
     LOGIN_TIME = Summary(
@@ -56,6 +57,8 @@ class SpeedportClient:
         self._host = host
         self._password = password
         self._session = session
+
+        self.logger = logging.getLogger(__name__ + '.' + self.__class__.__name__)
 
     @aio.count_exceptions(LOGIN_EXCEPTIONS)
     @aio.time(LOGIN_TIME)
@@ -118,8 +121,8 @@ class SpeedportClient:
                     raw = await resp.text()
                     try:
                         return json.loads(raw)
-                    except json.error.Error:
-                        print(raw)
+                    except json.error.Error as e:
+                        self.logger.error(e)
                         raise
 
     @aio.count_exceptions(HEARTBEAT_EXCEPTIONS)

@@ -10,7 +10,7 @@ info.info({
     'version': subprocess.run(['git', 'describe', '--always'], capture_output=True).stdout.decode().strip()
 })
 
-Client = client.SpeedportClient
+Client = client.Client
 
 DslCollector = collectors.DslCollector
 LteCollector = collectors.LteCollector
