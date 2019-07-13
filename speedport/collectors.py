@@ -36,19 +36,22 @@ class SpeedportBaseCollector:
     def __init__(self, client: SpeedportClient):
         self._client = client
 
+        if not hasattr(self, 'ENDPOINT'):
+            self.ENDPOINT = self.METRICS_SUBSYSTEM
+
     async def collect(self):
         try:
             with self._collect_exceptions.labels(self.METRICS_SUBSYSTEM).count_exceptions():
                 with self._collect_duration.labels(self.METRICS_SUBSYSTEM).time():
-                    data = await self._collect()
+                    raw = await self._client.fetch_data(self.ENDPOINT)
+                    data = self._process_data(raw)
                     self._collect_time.labels(self.METRICS_SUBSYSTEM).set_to_current_time()
                     return data
         except Exception as e:
             logger.error(e)
 
-    # noinspection PyMethodMayBeStatic
-    async def _collect(self):
-        raise NotImplementedError('Subclasses have to implement _collect')
+    def _process_data(self, data):
+        raise NotImplementedError('Subclasses have to implement _process_Data')
 
 
 class SpeedportDslCollector(SpeedportBaseCollector):
@@ -144,8 +147,7 @@ class SpeedportDslCollector(SpeedportBaseCollector):
             labelnames=['direction']
         )
 
-    async def _collect(self):
-        data = await self._client.fetch_data('dsl')
+    def _process_data(self, data):
         connection = data['Connection']
         line = data['Line']
 
@@ -187,6 +189,7 @@ class SpeedportDslCollector(SpeedportBaseCollector):
 
 class SpeedportLteCollector(SpeedportBaseCollector):
     METRICS_SUBSYSTEM = 'lte'
+    ENDPOINT = 'lteinfo'
 
     def __init__(self, client: SpeedportClient):
         super().__init__(client)
@@ -218,9 +221,7 @@ class SpeedportLteCollector(SpeedportBaseCollector):
         )
 
     # noinspection SpellCheckingInspection
-    async def _collect(self):
-        data = await self._client.fetch_data('lteinfo')
-
+    def _process_data(self, data):
         self._device_info.info({
             'imei': data['imei'],
             'imsi': data['imsi'],
@@ -243,6 +244,7 @@ class SpeedportLteCollector(SpeedportBaseCollector):
 
 class SpeedportInterfaceCollector(SpeedportBaseCollector):
     METRICS_SUBSYSTEM = 'interface'
+    ENDPOINT = 'interfaces'
 
     def __init__(self, client: SpeedportClient):
         super().__init__(client)
@@ -323,10 +325,6 @@ class SpeedportInterfaceCollector(SpeedportBaseCollector):
             name='collisions',
             documentation='Collision count on interface'
         )
-
-    async def _collect(self):
-        data = await self._client.fetch_data('interfaces')
-        return self._process_data(data)
 
     def _process_data(self, data):
         interfaces = data['line_status']
