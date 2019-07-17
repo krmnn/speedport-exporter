@@ -592,4 +592,10 @@ class BondingTunnelCollector(BaseCollector):
     def __merge_lists(data, kind: str, names: list, metrics: dict):
         assert len(names) == len(data), "Length {} != {} of {}".format(len(names), len(data), kind)
         for i, name in enumerate(names):
-            metrics[name].set(data[i][kind])
+            try:
+                metrics[name].set(data[i][kind])
+            except Exception as e:
+                print(e)
+                print(name)
+                print(data[i][kind])
+                raise e

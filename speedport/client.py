@@ -113,6 +113,9 @@ class Client:
 
         self._session.cookie_jar.update_cookies(cookies)
 
+        for cookie in self._session.cookie_jar:
+            print(cookie)
+
     async def fetch_data(self, file: str):
         with self.FETCH_EXCEPTIONS.labels(file).count_exceptions():
             with self.FETCH_TIME.labels(file).time():
