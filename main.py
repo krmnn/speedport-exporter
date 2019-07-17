@@ -6,7 +6,7 @@ logging.basicConfig(format='%(asctime)s : %(levelname)8s : %(name)30s : %(funcNa
 import aiohttp
 from prometheus_async import aio
 
-from settings import _speedport, _password
+from settings import _speedport, _password, _cookie_persistent_path
 from speedport import Client
 from speedport import DslCollector, InterfaceCollector, LteCollector, ModuleCollector, BondingTunnelCollector
 
@@ -29,8 +29,7 @@ aio.web.server_stats = server_stats
 
 async def main():
     async with aiohttp.ClientSession() as session:
-        client = Client(_speedport, _password, session)
-        await client.login()
+        client = Client(_speedport, _password, session, _cookie_persistent_path)
 
         login_task = asyncio.create_task(client.login_loop())
 

@@ -5,6 +5,7 @@ import random
 import re
 import time
 from http.cookies import SimpleCookie
+from pathlib import Path
 
 import aiohttp
 import dirtyjson as json
@@ -53,12 +54,19 @@ class Client:
 
     # endregion
 
-    def __init__(self, host, password, session: aiohttp.ClientSession):
+    def __init__(self, host, password, session: aiohttp.ClientSession, cookie_persistent_path: Path = None):
         self._host = host
         self._password = password
         self._session = session
 
         self.logger = logging.getLogger(__name__ + '.' + self.__class__.__name__)
+
+        self._cookie_persistent_path = cookie_persistent_path
+        if self._cookie_persistent_path and self._cookie_persistent_path.exists():
+            try:
+                self._session.cookie_jar.load(self._cookie_persistent_path)
+            except Exception as e:
+                self.logger.error("Loading saved cookies failed", exc_info=True)
 
     @aio.count_exceptions(LOGIN_EXCEPTIONS)
     @aio.time(LOGIN_TIME)
@@ -114,7 +122,13 @@ class Client:
         self._session.cookie_jar.update_cookies(cookies)
 
         for cookie in self._session.cookie_jar:
-            print(cookie)
+            self.logger.info(cookie)
+
+        if self._cookie_persistent_path:
+            try:
+                self._session.cookie_jar.save(self._cookie_persistent_path)
+            except Exception as e:
+                self.logger.error("Storing cookies failed", exc_info=True)
 
     async def fetch_data(self, file: str):
         with self.FETCH_EXCEPTIONS.labels(file).count_exceptions():
@@ -125,7 +139,7 @@ class Client:
                     try:
                         return json.loads(raw)
                     except json.error.Error as e:
-                        self.logger.error(e)
+                        self.logger.error("Error unmarshalling received data", exc_info=True)
                         raise
 
     @aio.count_exceptions(HEARTBEAT_EXCEPTIONS)

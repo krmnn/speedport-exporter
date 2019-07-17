@@ -38,7 +38,7 @@ class BaseCollector:
         if not self.ENDPOINT:
             self.ENDPOINT = self.METRICS_SUBSYSTEM
 
-        self.logger = logging.getLogger(__name__ +'.'+ self.__class__.__name__)
+        self.logger = logging.getLogger(__name__ + '.' + self.__class__.__name__)
 
     async def collect(self):
         try:
@@ -49,7 +49,7 @@ class BaseCollector:
                     self._collect_time.labels(self.METRICS_SUBSYSTEM).set_to_current_time()
                     return data
         except Exception as e:
-            self.logger.error(e)
+            self.logger.error("Error while collecting %s", self.ENDPOINT, exc_info=True)
 
     def _process_data(self, data):
         raise NotImplementedError('Subclasses have to implement _process_Data')
@@ -588,14 +588,15 @@ class BondingTunnelCollector(BaseCollector):
         self._dsl_tunnel.set(data['dsl_tunnel'] == 'Up')
         self._bonding.set(data['bonding'] == 'Up')
 
-    @staticmethod
-    def __merge_lists(data, kind: str, names: list, metrics: dict):
+    def __merge_lists(self, data, kind: str, names: list, metrics: dict):
         assert len(names) == len(data), "Length {} != {} of {}".format(len(names), len(data), kind)
         for i, name in enumerate(names):
             try:
-                metrics[name].set(data[i][kind])
+                val = data[i][kind]
+                if len(val):
+                    metrics[name].set(val)
+                else:
+                    metrics[name].set(0)
             except Exception as e:
-                print(e)
-                print(name)
-                print(data[i][kind])
+                self.logger.error("Error on name %s with value %s", name, data[i][kind], exc_info=True)
                 raise e
