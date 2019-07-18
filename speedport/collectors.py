@@ -600,3 +600,35 @@ class BondingTunnelCollector(BaseCollector):
             except Exception as e:
                 self.logger.error("Error on name %s with value %s", name, data[i][kind], exc_info=True)
                 raise e
+
+
+class PPPoESessionCollector(BaseCollector):
+    METRICS_SUBSYSTEM = 'pppoe'
+    ENDPOINT = 'session'
+
+    def __init__(self, client: Client):
+        super().__init__(client)
+
+        self._session = Info(
+            namespace=self.METRICS_NAMESPACE,
+            subsystem=self.METRICS_SUBSYSTEM,
+            name='session',
+            documentation='Information about PPPoE Session'
+        )
+
+        self._mtu = Gauge(
+            namespace=self.METRICS_NAMESPACE,
+            subsystem=self.METRICS_SUBSYSTEM,
+            name='mtu',
+            documentation='The MTU of the PPPoE'
+        )
+
+    def _process_data(self, data):
+        mtu = data['MTU']
+        del data['MTU']
+        if mtu:
+            self._mtu.set(mtu)
+        else:
+            self._mtu.set(-1)
+
+        self._session.info(data)

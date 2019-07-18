@@ -17,3 +17,4 @@ LteCollector = collectors.LteCollector
 InterfaceCollector = collectors.InterfaceCollector
 ModuleCollector = collectors.ModuleCollector
 BondingTunnelCollector = collectors.BondingTunnelCollector
+PPPoESessionCollector = collectors.PPPoESessionCollector
