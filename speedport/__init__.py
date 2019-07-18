@@ -18,3 +18,4 @@ InterfaceCollector = collectors.InterfaceCollector
 ModuleCollector = collectors.ModuleCollector
 BondingTunnelCollector = collectors.BondingTunnelCollector
 PPPoESessionCollector = collectors.PPPoESessionCollector
+CPUMemoryCollector = collectors.CPUMemoryCollector

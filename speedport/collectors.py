@@ -632,3 +632,143 @@ class PPPoESessionCollector(BaseCollector):
             self._mtu.set(-1)
 
         self._session.info(data)
+
+
+class CPUMemoryCollector(BaseCollector):
+    ENDPOINT = 'memory'
+
+    def __init__(self, client: Client):
+        super().__init__(client)
+
+        self._memory_main_available = Gauge(
+            namespace=self.METRICS_NAMESPACE,
+            subsystem='memory',
+            name='main_available',
+            unit='bytes',
+            documentation='Available Main Memory'
+        )
+
+        self._memory_main_used = Gauge(
+            namespace=self.METRICS_NAMESPACE,
+            subsystem='memory',
+            name='main_used',
+            unit='percentage',
+            documentation='Used Main Memory (%)'
+        )
+        self._memory_main_free = Gauge(
+            namespace=self.METRICS_NAMESPACE,
+            subsystem='memory',
+            name='main_free',
+            unit='percentage',
+            documentation='Free Main Memory (%)'
+        )
+
+        self._memory_flash_available = Gauge(
+            namespace=self.METRICS_NAMESPACE,
+            subsystem='memory',
+            name='flash_available',
+            unit='bytes',
+            documentation='Available Flash Memory'
+        )
+
+        self._memory_flash_used = Gauge(
+            namespace=self.METRICS_NAMESPACE,
+            subsystem='memory',
+            name='flash_used',
+            unit='percentage',
+            documentation='Used Flash Memory (%)'
+        )
+        self._memory_flash_free = Gauge(
+            namespace=self.METRICS_NAMESPACE,
+            subsystem='memory',
+            name='flash_free',
+            unit='percentage',
+            documentation='Free Flash Memory (%)'
+        )
+
+        self._cpu_load = Gauge(
+            namespace=self.METRICS_NAMESPACE,
+            subsystem='cpu',
+            name='load',
+            unit='percentage',
+            documentation='CPU-Load (%)'
+        )
+
+        self._memory_dns_available = Gauge(
+            namespace=self.METRICS_NAMESPACE,
+            subsystem='memory',
+            name='dns_available',
+            unit='bytes',
+            documentation='Available Dns Memory'
+        )
+
+        self._memory_dns_used = Gauge(
+            namespace=self.METRICS_NAMESPACE,
+            subsystem='memory',
+            name='dns_used',
+            unit='percentage',
+            documentation='Used Dns Memory (%)'
+        )
+        self._memory_dns_free = Gauge(
+            namespace=self.METRICS_NAMESPACE,
+            subsystem='memory',
+            name='dns_free',
+            unit='percentage',
+            documentation='Free Dns Memory (%)'
+        )
+
+        self._dns_cache_entries = Gauge(
+            namespace=self.METRICS_NAMESPACE,
+            subsystem='memory',
+            name='dns_cache_entries',
+            documentation='Number of DNS Cache entries'
+        )
+
+    def _process_data(self, data):
+        amm = int(data['amm'][:-2])
+        self._memory_main_available.set(amm * 1024)
+        res = re.search(r'([0-9]+(?:\.[0-9]+)?)% vs ([0-9]+(?:\.[0-9]+)?)%', data['used_free_main'])
+        if res:
+            used = float(res.group(1))
+            free = float(res.group(2))
+
+            self._memory_main_used.set(used / 100)
+            self._memory_main_free.set(free / 100)
+        else:
+            self._memory_main_used.set(-1)
+            self._memory_main_free.set(-1)
+
+        afm = int(data['afm'][:-2])
+        self._memory_flash_available.set(afm * 1024)
+        res = re.search(r'([0-9]+(?:\.[0-9]+)?)% vs ([0-9]+(?:\.[0-9]+)?)%', data['used_free_flash'])
+        if res:
+            used = float(res.group(1))
+            free = float(res.group(2))
+
+            self._memory_flash_used.set(used / 100)
+            self._memory_flash_free.set(free / 100)
+        else:
+            self._memory_flash_used.set(-1)
+            self._memory_flash_free.set(-1)
+
+        res = re.search(r'([0-9]+(?:\.[0-9]+)?)%', data['cpu_load'])
+        if res:
+            cpu_load = float(res.group(1))
+            self._cpu_load.set(cpu_load / 100)
+        else:
+            self._cpu_load.set(-1)
+
+        adcm = int(data['adcm'][:-2])
+        self._memory_dns_available.set(adcm * 1024)
+        res = re.search(r'([0-9]+(?:\.[0-9]+)?)% vs ([0-9]+(?:\.[0-9]+)?)%', data['used_free_dns'])
+        if res:
+            used = float(res.group(1))
+            free = float(res.group(2))
+
+            self._memory_dns_used.set(used / 100)
+            self._memory_dns_free.set(free / 100)
+        else:
+            self._memory_dns_used.set(-1)
+            self._memory_dns_free.set(-1)
+
+        self._dns_cache_entries.set(data['nodce'])
