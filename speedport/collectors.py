@@ -589,14 +589,19 @@ class BondingTunnelCollector(BaseCollector):
         self._bonding.set(data['bonding'] == 'Up')
 
     def __merge_lists(self, data, kind: str, names: list, metrics: dict):
+        shift = 0
         assert len(names) == len(data), "Length {} != {} of {}".format(len(names), len(data), kind)
         for i, name in enumerate(names):
             try:
-                val = data[i][kind]
-                if len(val):
-                    metrics[name].set(val)
-                else:
-                    metrics[name].set(0)
+                if i + shift >= len(names):
+                    self.logger.info('Skipping some names dynamically…')
+                    continue
+                val = data[i + shift][kind]
+                if len(val) == 0:
+                    self.logger.warn('The value is an empty string, but this is not possible… taking the next value.')
+                    shift += 1
+                    val = data[i + shift][kind]
+                metrics[name].set(val)
             except Exception as e:
                 self.logger.error("Error on name %s with value %s", name, data[i][kind], exc_info=True)
                 raise e
