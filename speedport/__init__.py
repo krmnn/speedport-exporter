@@ -19,3 +19,4 @@ ModuleCollector = collectors.ModuleCollector
 BondingTunnelCollector = collectors.BondingTunnelCollector
 PPPoESessionCollector = collectors.PPPoESessionCollector
 CPUMemoryCollector = collectors.CPUMemoryCollector
+BondingTR181Collector = collectors.BondingTR181Collector

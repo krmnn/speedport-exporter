@@ -9,7 +9,7 @@ from prometheus_async import aio
 from settings import _speedport, _password, _cookie_persistent_path
 from speedport import Client
 from speedport import DslCollector, InterfaceCollector, LteCollector, ModuleCollector, BondingTunnelCollector, \
-    PPPoESessionCollector, CPUMemoryCollector
+    PPPoESessionCollector, CPUMemoryCollector, BondingTR181Collector
 
 async_collectors = []
 server_stats_save = aio.web.server_stats
@@ -54,6 +54,9 @@ async def main():
 
         cpu_mem = CPUMemoryCollector(client)
         async_collectors.append(cpu_mem)
+
+        bonding_tr181 = BondingTR181Collector(client)
+        async_collectors.append(bonding_tr181)
 
         await aio.web.start_http_server(port=9611)
         await login_task

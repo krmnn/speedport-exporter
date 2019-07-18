@@ -772,3 +772,140 @@ class CPUMemoryCollector(BaseCollector):
             self._memory_dns_free.set(-1)
 
         self._dns_cache_entries.set(data['nodce'])
+
+
+class BondingTR181Collector(BaseCollector):
+    METRICS_SUBSYSTEM = 'bonding'
+    ENDPOINT = 'bonding_tr181'
+
+    def __init__(self, client: Client):
+        super().__init__(client)
+
+        self._info = Info(
+            namespace=self.METRICS_NAMESPACE,
+            name=self.METRICS_SUBSYSTEM,
+            documentation='General information about the bonding system'
+        )
+        self._error_info = Info(
+            namespace=self.METRICS_NAMESPACE,
+            subsystem=self.METRICS_SUBSYSTEM,
+            name='error',
+            documentation='Last Error Info'
+        )
+        self._hello_info = Info(
+            namespace=self.METRICS_NAMESPACE,
+            subsystem=self.METRICS_SUBSYSTEM,
+            name='hello',
+            documentation='Hello Info'
+        )
+
+        self._enabled = Gauge(
+            namespace=self.METRICS_NAMESPACE,
+            subsystem=self.METRICS_SUBSYSTEM,
+            name='enabled',
+            documentation='Bonding enabled'
+        )
+        self._rttswitch = Gauge(
+            namespace=self.METRICS_NAMESPACE,
+            subsystem=self.METRICS_SUBSYSTEM,
+            name='rttswitch',
+            documentation='RTTSwitch'
+        )
+        self._rtt = Gauge(
+            namespace=self.METRICS_NAMESPACE,
+            subsystem=self.METRICS_SUBSYSTEM,
+            name='rtt',
+            documentation='current rtt'
+        )
+        self._rttthre = Gauge(
+            namespace=self.METRICS_NAMESPACE,
+            subsystem=self.METRICS_SUBSYSTEM,
+            name='rtt_threshold',
+            documentation='RTT Threshold'
+        )
+        self._bwcalcula = Gauge(
+            namespace=self.METRICS_NAMESPACE,
+            subsystem=self.METRICS_SUBSYSTEM,
+            name='bandwidth_calculation_interval',
+            documentation='Bandwidth Calculation Interval'
+        )
+        self._bandwidth = Gauge(
+            namespace=self.METRICS_NAMESPACE,
+            subsystem=self.METRICS_SUBSYSTEM,
+            name='bandwidth_available',
+            documentation='AvailableBW'
+        )
+        self._hello_interval = Gauge(
+            namespace=self.METRICS_NAMESPACE,
+            subsystem=self.METRICS_SUBSYSTEM,
+            name='hello_interval',
+            documentation='Hello interval'
+        )
+        self._idle_hello_interval = Gauge(
+            namespace=self.METRICS_NAMESPACE,
+            subsystem=self.METRICS_SUBSYSTEM,
+            name='idle_hello_interval',
+            documentation='IdleHelloInterval'
+        )
+        self._hello_retry_times = Gauge(
+            namespace=self.METRICS_NAMESPACE,
+            subsystem=self.METRICS_SUBSYSTEM,
+            name='hello_retry_times',
+            documentation='HelloRetryTimes',
+        )
+        self._idle_hello_traffic_interval = Gauge(
+            namespace=self.METRICS_NAMESPACE,
+            subsystem=self.METRICS_SUBSYSTEM,
+            name='idle_hello_traffic_interval',
+            documentation='IdleHelloTrafficInterval'
+        )
+
+        self._interface_number_of_entries = Gauge(
+            namespace=self.METRICS_NAMESPACE,
+            subsystem=self.METRICS_SUBSYSTEM,
+            name='interface_entries',
+            documentation='InterfaceNumberOfEntries'
+        )
+
+        self._queue_skb_timeout = Gauge(
+            namespace=self.METRICS_NAMESPACE,
+            subsystem=self.METRICS_SUBSYSTEM,
+            name='skb_queue_timeout',
+            documentation='QueueSkbTimeOut'
+        )
+
+    def _process_data(self, data):
+        self._enabled.set(data['enable1'])
+        del data['enable1']
+        self._rttswitch.set(data['rttswitch'])
+        del data['rttswitch']
+        self._rtt.set(data['rtt'])
+        del data['rtt']
+        self._rttthre.set(data['rttthre'])
+        del data['rttthre']
+        self._bwcalcula.set(data['bwcalcula'])
+        del data['bwcalcula']
+        self._bandwidth.set(data['bw'])
+        del data['bw']
+        self._hello_interval.set(data['hellointerval'])
+        del data['hellointerval']
+        self._idle_hello_interval.set(data['idlehellointerval'])
+        del data['idlehellointerval']
+        self._hello_retry_times.set(data['helloretrytimes'])
+        del data['helloretrytimes']
+        self._idle_hello_traffic_interval.set(data['idlehellotrafficinterval'])
+        del data['idlehellotrafficinterval']
+        self._interface_number_of_entries.set(data['num_entry'])
+        del data['num_entry']
+        self._queue_skb_timeout.set(data['QueueSkbTimeOut'])
+        del data['QueueSkbTimeOut']
+
+        del data['status1']  # collected within BondingTunnelCollector
+
+        self._error_info.info({'last_error_info': data['errorinfo']})
+        del data['errorinfo']
+
+        self._hello_info.info({'status': data['hellostatus']})
+        del data['hellostatus']
+
+        self._info.info(data)
