@@ -16,20 +16,20 @@ class BaseCollector:
         name='collection_duration',
         unit='seconds',
         documentation='Duration to collect dsl metrics',
-        labelnames=['subsystem'],
+        labelnames=['collector'],
     )
     _collect_exceptions = Counter(
         namespace=METRICS_NAMESPACE,
         name='collection_exceptions',
         documentation='Exceptions occurring during the collection',
-        labelnames=['subsystem'],
+        labelnames=['collector'],
     )
     _collect_time = Gauge(
         namespace=METRICS_NAMESPACE,
         name='collect_time',
         unit='seconds',
         documentation='Last successful collect (useful because ignoring exceptions)',
-        labelnames=['subsystem']
+        labelnames=['collector']
     )
 
     def __init__(self, client: Client):
@@ -42,11 +42,11 @@ class BaseCollector:
 
     async def collect(self):
         try:
-            with self._collect_exceptions.labels(self.METRICS_SUBSYSTEM).count_exceptions():
-                with self._collect_duration.labels(self.METRICS_SUBSYSTEM).time():
+            with self._collect_exceptions.labels(self.__class__.__name__).count_exceptions():
+                with self._collect_duration.labels(self.__class__.__name__).time():
                     raw = await self._client.fetch_data(self.ENDPOINT)
                     data = self._process_data(raw)
-                    self._collect_time.labels(self.METRICS_SUBSYSTEM).set_to_current_time()
+                    self._collect_time.labels(self.__class__.__name__).set_to_current_time()
                     return data
         except Exception as e:
             self.logger.error("Error while collecting %s", self.ENDPOINT, exc_info=True)
