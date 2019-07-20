@@ -494,25 +494,6 @@ class BondingTunnelCollector(BaseCollector):
         'InBcastOctets',
         'OutBcastOctets',
     ]
-    # noinspection SpellCheckingInspection
-    _ireg_names = [
-        'out_sequence_number',
-        'maximum_sequence_number',
-        'error_sequence_number',
-        'out_interface_index',
-        'maximum_interface_index',
-        'queue_length',
-        'over_count',
-        'over_number',
-        'blow_count',
-        'blow_number',
-        'reverse_number',
-        'time_out_count',
-        'time_out_drop_count',
-        'lost_times',
-        'same_sequence_number',
-        # 'sequence_error_count', # in the table there are 16 fields, but only 15 are contained in the json
-    ]
 
     def __init__(self, client: Client):
         super().__init__(client)
@@ -537,16 +518,6 @@ class BondingTunnelCollector(BaseCollector):
                 documentation=name
             )
             for name in self._ip_ext_names
-        }
-
-        self._ireg_metrics = {
-            name: Gauge(
-                namespace=self.METRICS_NAMESPACE,
-                subsystem=self.METRICS_SUBSYSTEM,
-                name='ireg_' + name,
-                documentation=name
-            )
-            for name in self._ireg_names
         }
 
         self._lte_tunnel = Gauge(
@@ -580,28 +551,17 @@ class BondingTunnelCollector(BaseCollector):
         del data['IpExt']
         self.__merge_lists(ip_ext, 'IpExt', self._ip_ext_names, self._ip_ext_metrics)
 
-        ireg = data['ireg']
-        del data['ireg']
-        self.__merge_lists(ireg, 'ireg', self._ireg_names, self._ireg_metrics)
+        del data['ireg']  # too error prone to collect
 
         self._lte_tunnel.set(data['lte_tunnel'] == 'Up')
         self._dsl_tunnel.set(data['dsl_tunnel'] == 'Up')
         self._bonding.set(data['bonding'] == 'Up')
 
     def __merge_lists(self, data, kind: str, names: list, metrics: dict):
-        shift = 0
         assert len(names) == len(data), "Length {} != {} of {}".format(len(names), len(data), kind)
         for i, name in enumerate(names):
             try:
-                if i + shift >= len(names):
-                    self.logger.info('Skipping some names dynamically…')
-                    continue
-                val = data[i + shift][kind]
-                if len(val) == 0:
-                    self.logger.warn('The value is an empty string, but this is not possible… taking the next value.')
-                    shift += 1
-                    val = data[i + shift][kind]
-                metrics[name].set(val)
+                metrics[name].set(data[i][kind])
             except Exception as e:
                 self.logger.error("Error on name %s with value %s", name, data[i][kind], exc_info=True)
                 raise e
