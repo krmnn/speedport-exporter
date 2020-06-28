@@ -101,6 +101,7 @@ class Client:
             content = await resp.read()
             parsed = json.loads(content)
             data = self.parse_typed_dict(parsed)
+            session_id = resp.cookies["SessionID_R3"]
 
             assert data['login'] == 'success', "Login wasn't successful: {}".format(data)
 
@@ -114,10 +115,8 @@ class Client:
 
         cookies = SimpleCookie()
         cookies['challengev'] = challenge
-        cookies['challengev']['domain'] = self._host
-
         cookies['derivedk'] = derived_key
-        cookies['derivedk']['domain'] = self._host
+        cookies['SessionID_R3'] = session_id
 
         self._session.cookie_jar.update_cookies(cookies)
 
